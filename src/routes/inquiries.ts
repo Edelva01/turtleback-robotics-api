@@ -82,12 +82,12 @@ router.post("/", async (req, res) => {
 
         await tx.$executeRaw`
           INSERT INTO inquiry_parent (inquiry_id, number_of_kids, primary_age_group_id)
-          VALUES (${inquiryId}, ${numberOfKids ?? 1}, ${primaryAgeGroupId});`;
+          VALUES (CAST(${inquiryId} AS uuid), ${numberOfKids ?? 1}, CAST(${primaryAgeGroupId} AS uuid));`;
 
         // Insert selected age groups
         const inserts = agRows.map(r => tx.$executeRaw`
           INSERT INTO inquiry_age_groups (inquiry_id, age_group_id)
-          VALUES (${inquiryId}, ${r.id})
+          VALUES (CAST(${inquiryId} AS uuid), CAST(${r.id} AS uuid))
           ON CONFLICT DO NOTHING;`);
         await Promise.all(inserts);
 
@@ -135,7 +135,7 @@ router.post("/", async (req, res) => {
 
         await tx.$executeRaw`
           INSERT INTO inquiry_partner (inquiry_id, org_type_id, org_type_other, org_name)
-          VALUES (${inquiryId}, ${org[0].id}, ${orgType === 'other' ? orgTypeOther : null}, ${orgName});`;
+          VALUES (CAST(${inquiryId} AS uuid), CAST(${org[0].id} AS uuid), ${orgType === 'other' ? orgTypeOther : null}, ${orgName});`;
 
         return inquiryId;
       });
