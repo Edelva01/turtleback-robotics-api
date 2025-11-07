@@ -1,6 +1,7 @@
 import { Router } from "express";
 import Joi from "joi";
 import { prisma } from "../prisma.js";
+import { Prisma } from "@prisma/client";
 
 const router = Router();
 
@@ -74,7 +75,7 @@ router.post("/", async (req, res) => {
 
         // Look up age group ids by code (ordered)
         const agRows = await tx.$queryRaw<{ id: string, code: string }[]>`
-          SELECT id, code FROM age_groups WHERE code IN (${prisma.join(ageGroups)}) AND active = true ORDER BY sort_order;`;
+          SELECT id, code FROM age_groups WHERE code IN (${Prisma.join(ageGroups)}) AND active = true ORDER BY sort_order;`;
 
         if (!agRows.length) throw new Error("Invalid age group codes");
         const primaryAgeGroupId = agRows[0].id;
@@ -170,4 +171,3 @@ router.get("/admin", async (req, res) => {
 });
 
 export default router;
-
