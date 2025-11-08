@@ -136,8 +136,8 @@ const partnerSchema = Joi.object({
   firstName: Joi.string().min(1).max(100).required(),
   lastName: Joi.string().min(1).max(100).required(),
   email: Joi.string().email().max(320).required(),
-  phone: Joi.string().max(50).allow("", null),
-  message: Joi.string().max(2000).allow("", null),
+  phone: Joi.string().min(1).max(50).required(),
+  message: Joi.string().min(1).max(2000).required(),
   consent: Joi.boolean().valid(true).required(),
   source: Joi.string().max(120).default("partners-page"),
   pagePath: Joi.string().max(512).allow("", null)
