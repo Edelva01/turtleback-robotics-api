@@ -9,6 +9,9 @@ import inquiries from "./routes/inquiries.js";
 
 const app = express();
 
+// Behind Render's proxy; enable correct IP detection for rate limiting
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(cors({ origin: (process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173"]) }));
 app.use(express.json({ limit: "1mb" }));
@@ -18,8 +21,7 @@ app.use(rateLimit({ windowMs: 60_000, max: Number(process.env.RATE_LIMIT_PER_MIN
 app.get("/api/health", (_req, res) => res.json({ ok: true, service: "tra-api" }));
 
 // Mount routers correctly
-app.use("/api/inquiries", inquiries);           // POST /api/inquiries
-app.use("/api/admin/inquiries", inquiries);     // GET /api/admin/inquiries (token header)
+app.use("/api/inquiries", inquiries);           // POST /api/inquiries, GET /api/inquiries/admin, PATCH /api/inquiries/admin/:id/status
 
 // Optional: 404 for API
 app.use("/api", (_req, res) => res.status(404).json({ ok: false, error: "not_found" }));

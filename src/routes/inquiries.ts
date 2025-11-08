@@ -2,6 +2,7 @@ import { Router } from "express";
 import Joi from "joi";
 import { prisma } from "../prisma.js";
 import { Prisma } from "@prisma/client";
+import nodemailer from "nodemailer";
 
 const router = Router();
 
@@ -44,6 +45,44 @@ async function sendEmail(subject: string, text: string, html?: string) {
     }
   } catch (e: any) {
     console.warn("[notify] resend exception:", e?.message || e);
+  }
+}
+
+// Email via SMTP (Gmail or other). Uses send-as alias via SMTP_FROM.
+async function sendSMTPEmail({
+  to,
+  subject,
+  text,
+  html,
+}: {
+  to: string | string[];
+  subject: string;
+  text: string;
+  html?: string;
+}) {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 465);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const from = process.env.SMTP_FROM || user;
+  if (!host || !user || !pass) return; // disabled
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465, // true for 465, false for 587/STARTTLS
+      auth: { user, pass },
+    });
+
+    await transporter.sendMail({
+      from,
+      to,
+      subject,
+      text,
+      html,
+    });
+  } catch (e: any) {
+    console.warn("[notify] smtp error:", e?.message || e);
   }
 }
 
@@ -158,10 +197,32 @@ router.post("/", async (req, res) => {
         `Message: ${(message ?? "").slice(0, 500)}\n` +
         `Page: ${pagePath || "-"}  Source: ${source}`;
       notify(parentSummary);
-      sendEmail(
-        `New Parent Inquiry — ${firstName} ${lastName}`,
-        parentSummary
-      );
+      // Prefer SMTP if configured, else Resend
+      if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        const internalTo = (process.env.SMTP_TO || "").split(/\s*,\s*/).filter(Boolean);
+        if (internalTo.length) {
+          sendSMTPEmail({ to: internalTo, subject: `New Parent Inquiry — ${firstName} ${lastName}`, text: parentSummary });
+        }
+        // Parent receipt
+        sendSMTPEmail({
+          to: email,
+          subject: "We received your inquiry — Turtleback Robotics Academy",
+          text:
+            `Hi ${firstName},\n\n` +
+            `Thanks for your interest in Turtleback Robotics Academy! ` +
+            `We received your request and will follow up within 1–2 business days.\n\n` +
+            `Summary:\n` +
+            `- Kids: ${numberOfKids ?? 1}\n` +
+            `- Age groups: ${(ageGroups || []).join(", ")}\n\n` +
+            `If you have updates, just reply to this email.\n\n` +
+            `— Turtleback Robotics Team`,
+        });
+      } else {
+        sendEmail(
+          `New Parent Inquiry — ${firstName} ${lastName}`,
+          parentSummary
+        );
+      }
 
       return res.status(201).json({ ok: true, id: result });
     } else {
@@ -204,10 +265,31 @@ router.post("/", async (req, res) => {
         `Message: ${(message ?? "").slice(0, 500)}\n` +
         `Page: ${pagePath || "-"}  Source: ${source}`;
       notify(partnerSummary);
-      sendEmail(
-        `New Partner Inquiry — ${orgName}`,
-        partnerSummary
-      );
+      if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        const internalTo = (process.env.SMTP_TO || "").split(/\s*,\s*/).filter(Boolean);
+        if (internalTo.length) {
+          sendSMTPEmail({ to: internalTo, subject: `New Partner Inquiry — ${orgName}`, text: partnerSummary });
+        }
+        // Partner receipt (send to contact email)
+        sendSMTPEmail({
+          to: email,
+          subject: "We received your partnership inquiry — Turtleback Robotics Academy",
+          text:
+            `Hi ${firstName},\n\n` +
+            `Thanks for reaching out about partnering. ` +
+            `We received your request and will follow up within 1–2 business days.\n\n` +
+            `Summary:\n` +
+            `- Organization: ${orgName}\n` +
+            `- Type: ${orgType}${orgType === 'other' && orgTypeOther ? ` (${orgTypeOther})` : ''}\n\n` +
+            `If you have updates, just reply to this email.\n\n` +
+            `— Turtleback Robotics Team`,
+        });
+      } else {
+        sendEmail(
+          `New Partner Inquiry — ${orgName}`,
+          partnerSummary
+        );
+      }
 
       return res.status(201).json({ ok: true, id: result });
     }
