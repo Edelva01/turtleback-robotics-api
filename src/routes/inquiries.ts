@@ -274,8 +274,10 @@ router.post("/", async (req, res) => {
                         </ul>
                       </div>
                       <p style="margin:0 0 8px;color:#334155;font-size:16px;">If you have any updates or questions, simply reply to this email.</p>
-                      <p style="margin:0 0 4px;color:#334155;font-size:16px;">— ${sigName}${sigTitle ? `, ${sigTitle}` : ''}</p>
-                      <p style="margin:0 0 8px;color:#64748b;font-size:14px;">${sigAddress}${sigEmail ? ` • <a href=\"mailto:${sigEmail}\">${sigEmail}</a>` : ''}</p>
+                      <p style="margin:0 0 12px;color:#334155;font-size:16px;">Best regards,</p>
+                      <p style="margin:0;color:#0f172a;font-weight:600;font-size:16px;">${sigName}${sigTitle ? `, ${sigTitle}` : ''}</p>
+                      ${sigAddress ? sigAddress.split('•').map((p:any)=>`<p style="margin:0;color:#64748b;font-size:14px;">${String(p).trim()}</p>`).join('') : ''}
+                      ${sigEmail ? `<p style="margin:0 0 8px;"><a href="mailto:${sigEmail}">${sigEmail}</a></p>` : ''}
                       <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;"/>
                       <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">${privacyText}${privacyUrl ? ` <a href=\"${privacyUrl}\">Privacy Policy</a>.` : ''}</p>
                     </td>
@@ -287,7 +289,7 @@ router.post("/", async (req, res) => {
         const replyTo = process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || undefined;
         sendEmail(
           "Thanks for your interest — Turtleback Robotics Academy",
-          `Hi ${firstName},\n\nWe’re excited that you’re considering our programs—great choice! Our team received your request and will follow up within 1–2 business days.\n\nCongratulations on taking a powerful step for your child’s growth. Our classes strengthen STEM (Science, Technology, Engineering, and Mathematics) while building creativity, teamwork, problem solving, and confidence.\n\nSummary\n- Kids: ${numberOfKids ?? 1}\n- Age groups: ${(ageGroups || []).join(", ")}\n\nReply to this email with any questions.\n\n— ${sigName}${sigTitle ? ", " + sigTitle : ""}\n${sigAddress}${sigEmail ? "\n" + sigEmail : ""}\n\nPrivacy: ${privacyText}${privacyUrl ? ` (${privacyUrl})` : ''}`,
+          `Hi ${firstName},\n\nWe’re excited that you’re considering our programs—great choice! Our team received your request and will follow up within 1–2 business days.\n\nCongratulations on taking a powerful step for your child’s growth. Our classes strengthen STEM (Science, Technology, Engineering, and Mathematics) while building creativity, teamwork, problem solving, and confidence.\n\nSummary\n- Kids: ${numberOfKids ?? 1}\n- Age groups: ${(ageGroups || []).join(", ")}\n\nReply to this email with any questions.\n\nBest regards,\n${sigName}${sigTitle ? ", " + sigTitle : ""}\n${sigAddress.split('•').map(s=>s.trim()).join('\\n')}\n${sigEmail ? sigEmail + "\\n" : ""}Privacy: ${privacyText}${privacyUrl ? ` (${privacyUrl})` : ''}`,
           niceHtml,
           email,
           undefined,
@@ -347,13 +349,12 @@ router.post("/", async (req, res) => {
           subject: "We received your partnership inquiry — Turtleback Robotics Academy",
           text:
             `Hi ${firstName},\n\n` +
-            `Thanks for reaching out about partnering. ` +
-            `We received your request and will follow up within 1–2 business days.\n\n` +
-            `Summary:\n` +
-            `- Organization: ${orgName}\n` +
-            `- Type: ${orgType}${orgType === 'other' && orgTypeOther ? ` (${orgTypeOther})` : ''}\n\n` +
+            `We appreciate your inquiry and are delighted to see ${orgName} is interested in partnering with Turtleback Robotics Academy as a ${String(orgType).split('_').map(s=>s[0].toUpperCase()+s.slice(1)).join(' ')} entity. ` +
+            `Our team will follow up within 1–2 business days to discuss next steps.\n\n` +
             `If you have updates, just reply to this email.\n\n` +
-            `— Turtleback Robotics Team`,
+            `${sigName2}${sigTitle2 ? ", " + sigTitle2 : ""}\n` +
+            `${sigAddress2.split('•').map(s=>s.trim()).join('\\n')}\n` +
+            `${sigEmail2 ? sigEmail2 + "\\n" : ""}`,
         });
       } else {
         // Internal summary
@@ -369,13 +370,35 @@ router.post("/", async (req, res) => {
         const sigAddress2 = process.env.EMAIL_SIGNATURE_ADDRESS || 'Turtleback Robotics Academy • 6815 Commons Drive • Prince George, VA 23875';
         const privacyText2 = process.env.EMAIL_PRIVACY_TEXT || 'We respect your privacy. We use your information only to respond to your inquiry and provide program updates you opt into. We do not sell or share personal information.';
         const privacyUrl2 = process.env.EMAIL_PRIVACY_URL || '';
+        const orgTypeDisplay = String(orgType).split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
         const partnerHtml = `
-          <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px 0;\">\n            <tr>\n              <td align=\"center\">\n                <table width=\"640\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;\">\n                  <tr>\n                    <td>\n                      ${logoUrl2 ? `<div style=\\\"text-align:center;margin:0 0 16px\\\"><img src=\\\"${logoUrl2}\\\" alt=\\\"Turtleback Robotics Academy\\\" height=\\\"56\\\" style=\\\"display:inline-block\\\"/></div>` : ''}
-                      <h1 style=\"margin:0 0 8px;font-size:22px;color:#0f172a;\">Thank you for your partnership inquiry</h1>\n                      <p style=\"margin:0 0 16px;color:#334155;font-size:16px;\">Hi ${firstName},</p>\n                      <p style=\"margin:0 0 16px;color:#334155;font-size:16px;\">We appreciate your interest in partnering with Turtleback Robotics Academy. Our team will follow up within 1–2 business days to discuss next steps.</p>\n                      <div style=\"background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:16px 0;\">\n                        <p style=\"margin:0 0 8px;color:#0f172a;font-weight:600;\">Summary</p>\n                        <ul style=\"margin:0;color:#334155;padding-left:18px;\">\n                          <li>Organization: ${orgName}</li>\n                          <li>Type: ${orgType}${orgType === 'other' && orgTypeOther ? ` (${orgTypeOther})` : ''}</li>\n                        </ul>\n                      </div>\n                      <p style=\"margin:0 0 8px;color:#334155;font-size:16px;\">If you have any updates or questions, simply reply to this email.</p>\n                      <p style=\"margin:0 0 4px;color:#334155;font-size:16px;\">— ${sigName2}${sigTitle2 ? `, ${sigTitle2}` : ''}</p>\n                      <p style=\"margin:0 0 8px;color:#64748b;font-size:14px;\">${sigAddress2}${sigEmail2 ? ` • <a href=\"mailto:${sigEmail2}\">${sigEmail2}</a>` : ''}</p>\n                      <hr style=\"border:none;border-top:1px solid #e2e8f0;margin:16px 0;\"/>\n                      <p style=\"margin:0;color:#94a3b8;font-size:12px;line-height:1.5;\">${privacyText2}${privacyUrl2 ? ` <a href=\"${privacyUrl2}\">Privacy Policy</a>.` : ''}</p>\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n          </table>`;
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px 0;">
+            <tr>
+              <td align="center">
+                <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;">
+                  <tr>
+                    <td>
+                      ${logoUrl2 ? `<div style="text-align:center;margin:0 0 16px"><img src="${logoUrl2}" alt="Turtleback Robotics Academy" height="56" style="display:inline-block"/></div>` : ''}
+                      <h1 style="margin:0 0 8px;font-size:22px;color:#0f172a;">Thank you for your partnership inquiry</h1>
+                      <p style="margin:0 0 16px;color:#334155;font-size:16px;">Hi ${firstName},</p>
+                      <p style="margin:0 0 16px;color:#334155;font-size:16px;">We appreciate your inquiry and are delighted to see <strong>${orgName}</strong> is interested in partnering with Turtleback Robotics Academy as a <strong>${orgTypeDisplay}</strong> entity. Our team will follow up within 1–2 business days to discuss next steps.</p>
+                      <p style="margin:0 0 8px;color:#334155;font-size:16px;">If you have any updates or questions, simply reply to this email.</p>
+                      <p style="margin:0 0 12px;color:#334155;font-size:16px;">Best regards,</p>
+                      <p style="margin:0;color:#0f172a;font-weight:600;font-size:16px;">${sigName2}${sigTitle2 ? `, ${sigTitle2}` : ''}</p>
+                      ${sigAddress2 ? sigAddress2.split('•').map((p:any)=>`<p style="margin:0;color:#64748b;font-size:14px;">${String(p).trim()}</p>`).join('') : ''}
+                      ${sigEmail2 ? `<p style="margin:0 0 8px;"><a href="mailto:${sigEmail2}">${sigEmail2}</a></p>` : ''}
+                      <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;"/>
+                      <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">${privacyText2}${privacyUrl2 ? ` <a href="${privacyUrl2}">Privacy Policy</a>.` : ''}</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>`;
         const replyTo2 = process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || undefined;
         sendEmail(
           "Thank you — Turtleback Robotics Academy",
-          `Hi ${firstName},\n\nWe appreciate your interest in partnering with Turtleback Robotics Academy. Our team will follow up within 1–2 business days.\n\nSummary\n- Organization: ${orgName}\n- Type: ${orgType}${orgType === 'other' && orgTypeOther ? ` (${orgTypeOther})` : ''}\n\nReply to this email with any questions.\n\n— ${sigName2}${sigTitle2 ? ", " + sigTitle2 : ""}\n${sigAddress2}${sigEmail2 ? "\n" + sigEmail2 : ""}\n\nPrivacy: ${privacyText2}${privacyUrl2 ? ` (${privacyUrl2})` : ''}`,
+          `Hi ${firstName},\n\nWe appreciate your inquiry and are delighted to see ${orgName} is interested in partnering with Turtleback Robotics Academy as a ${String(orgType).split('_').map(s=>s[0].toUpperCase()+s.slice(1)).join(' ')} entity. Our team will follow up within 1–2 business days to discuss next steps.\n\nReply to this email with any questions.\n\nBest regards,\n${sigName2}${sigTitle2 ? ", " + sigTitle2 : ""}\n${sigAddress2.split('•').map(s=>s.trim()).join('\\n')}\n${sigEmail2 ? sigEmail2 + "\\n" : ""}Privacy: ${privacyText2}${privacyUrl2 ? ` (${privacyUrl2})` : ''}`,
           partnerHtml,
           email,
           undefined,
