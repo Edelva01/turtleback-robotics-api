@@ -23,12 +23,29 @@ async function notify(text: string) {
 }
 
 // Email notification via Resend (optional)
-async function sendEmail(subject: string, text: string, html?: string) {
+async function sendEmail(
+  subject: string,
+  text: string,
+  html?: string,
+  toOverride?: string | string[],
+  bccOverride?: string | string[],
+  replyToOverride?: string | string[]
+) {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
   const to = process.env.RESEND_TO;
-  if (!key || !from || !to || !gfetch) return;
-  const recipients = to.split(/\s*,\s*/).filter(Boolean);
+  if (!key || !from || (!to && !toOverride) || !gfetch) return;
+  const recipients = toOverride
+    ? (Array.isArray(toOverride) ? toOverride : [toOverride])
+    : (to!.split(/\s*,\s*/).filter(Boolean));
+  const bccEnv = process.env.RESEND_BCC;
+  const bcc = bccOverride
+    ? (Array.isArray(bccOverride) ? bccOverride : [bccOverride])
+    : (bccEnv ? bccEnv.split(/\s*,\s*/).filter(Boolean) : undefined);
+  const replyToEnv = process.env.RESEND_REPLY_TO;
+  const reply_to = replyToOverride
+    ? (Array.isArray(replyToOverride) ? replyToOverride : [replyToOverride])
+    : (replyToEnv ? replyToEnv.split(/\s*,\s*/).filter(Boolean) : undefined);
   if (!recipients.length) return;
   try {
     const resp = await gfetch("https://api.resend.com/emails", {
@@ -37,7 +54,7 @@ async function sendEmail(subject: string, text: string, html?: string) {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from, to: recipients, subject, text, html }),
+      body: JSON.stringify({ from, to: recipients, subject, text, html, bcc, reply_to }),
     });
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");
@@ -218,9 +235,56 @@ router.post("/", async (req, res) => {
             `— Turtleback Robotics Team`,
         });
       } else {
+        // Internal summary
         sendEmail(
           `New Parent Inquiry — ${firstName} ${lastName}`,
           parentSummary
+        );
+        // Parent receipt via Resend (HTML + reply-to + optional BCC)
+        const logoUrl = process.env.EMAIL_LOGO_URL || '';
+        const sigName = process.env.EMAIL_SIGNATURE_NAME || 'Turtleback Robotics Team';
+        const sigTitle = process.env.EMAIL_SIGNATURE_TITLE || '';
+        const sigEmail = process.env.EMAIL_SIGNATURE_EMAIL || (process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || '');
+        const sigAddress = process.env.EMAIL_SIGNATURE_ADDRESS || 'Richmond, VA';
+        const privacyText = process.env.EMAIL_PRIVACY_TEXT || 'We respect your privacy. We use your information only to respond to your inquiry and provide program updates you opt into. We do not sell or share personal information.';
+        const privacyUrl = process.env.EMAIL_PRIVACY_URL || '';
+        const niceHtml = `
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px 0;">
+            <tr>
+              <td align="center">
+                <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;">
+                  <tr>
+                    <td>
+                      ${logoUrl ? `<div style=\"text-align:center;margin:0 0 16px\"><img src=\"${logoUrl}\" alt=\"Turtleback Robotics Academy\" height=\"56\" style=\"display:inline-block\"/></div>` : ''}
+                      <h1 style="margin:0 0 8px;font-size:22px;color:#0f172a;">Thank you for contacting Turtleback Robotics Academy</h1>
+                      <p style="margin:0 0 16px;color:#334155;font-size:16px;">Hi ${firstName},</p>
+                      <p style="margin:0 0 16px;color:#334155;font-size:16px;">We’re excited that you’re considering our programs—great choice! Hands‑on robotics builds real‑world problem solving, creativity, and confidence. Our team has received your request and will follow up within 1–2 business days.</p>
+                      <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:16px 0;">
+                        <p style="margin:0 0 8px;color:#0f172a;font-weight:600;">Summary</p>
+                        <ul style="margin:0;color:#334155;padding-left:18px;">
+                          <li>Kids: ${numberOfKids ?? 1}</li>
+                          <li>Age groups: ${(ageGroups || []).join(", ")}</li>
+                        </ul>
+                      </div>
+                      <p style="margin:0 0 8px;color:#334155;font-size:16px;">If you have any updates or questions, simply reply to this email.</p>
+                      <p style="margin:0 0 4px;color:#334155;font-size:16px;">— ${sigName}${sigTitle ? `, ${sigTitle}` : ''}</p>
+                      <p style="margin:0 0 8px;color:#64748b;font-size:14px;">${sigAddress}${sigEmail ? ` • <a href=\"mailto:${sigEmail}\">${sigEmail}</a>` : ''}</p>
+                      <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;"/>
+                      <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">${privacyText}${privacyUrl ? ` <a href=\"${privacyUrl}\">Privacy Policy</a>.` : ''}</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>`;
+        const replyTo = process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || undefined;
+        sendEmail(
+          "Thanks for your interest — Turtleback Robotics Academy",
+          `Hi ${firstName},\n\nWe’re excited that you’re considering our programs—great choice! Our team received your request and will follow up within 1–2 business days.\n\nSummary\n- Kids: ${numberOfKids ?? 1}\n- Age groups: ${(ageGroups || []).join(", ")}\n\nReply to this email with any questions.\n\n— ${sigName}${sigTitle ? ", " + sigTitle : ""}\n${sigAddress}${sigEmail ? "\n" + sigEmail : ""}\n\nPrivacy: ${privacyText}${privacyUrl ? ` (${privacyUrl})` : ''}`,
+          niceHtml,
+          email,
+          undefined,
+          replyTo
         );
       }
 
@@ -285,9 +349,30 @@ router.post("/", async (req, res) => {
             `— Turtleback Robotics Team`,
         });
       } else {
+        // Internal summary
         sendEmail(
           `New Partner Inquiry — ${orgName}`,
           partnerSummary
+        );
+        // Partner receipt via Resend (logo + signature + privacy)
+        const logoUrl2 = process.env.EMAIL_LOGO_URL || '';
+        const sigName2 = process.env.EMAIL_SIGNATURE_NAME || 'Turtleback Robotics Team';
+        const sigTitle2 = process.env.EMAIL_SIGNATURE_TITLE || '';
+        const sigEmail2 = process.env.EMAIL_SIGNATURE_EMAIL || (process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || '');
+        const sigAddress2 = process.env.EMAIL_SIGNATURE_ADDRESS || 'Richmond, VA';
+        const privacyText2 = process.env.EMAIL_PRIVACY_TEXT || 'We respect your privacy. We use your information only to respond to your inquiry and provide program updates you opt into. We do not sell or share personal information.';
+        const privacyUrl2 = process.env.EMAIL_PRIVACY_URL || '';
+        const partnerHtml = `
+          <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px 0;\">\n            <tr>\n              <td align=\"center\">\n                <table width=\"640\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;\">\n                  <tr>\n                    <td>\n                      ${logoUrl2 ? `<div style=\\\"text-align:center;margin:0 0 16px\\\"><img src=\\\"${logoUrl2}\\\" alt=\\\"Turtleback Robotics Academy\\\" height=\\\"56\\\" style=\\\"display:inline-block\\\"/></div>` : ''}
+                      <h1 style=\"margin:0 0 8px;font-size:22px;color:#0f172a;\">Thank you for your partnership inquiry</h1>\n                      <p style=\"margin:0 0 16px;color:#334155;font-size:16px;\">Hi ${firstName},</p>\n                      <p style=\"margin:0 0 16px;color:#334155;font-size:16px;\">We appreciate your interest in partnering with Turtleback Robotics Academy. Our team will follow up within 1–2 business days to discuss next steps.</p>\n                      <div style=\"background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:16px 0;\">\n                        <p style=\"margin:0 0 8px;color:#0f172a;font-weight:600;\">Summary</p>\n                        <ul style=\"margin:0;color:#334155;padding-left:18px;\">\n                          <li>Organization: ${orgName}</li>\n                          <li>Type: ${orgType}${orgType === 'other' && orgTypeOther ? ` (${orgTypeOther})` : ''}</li>\n                        </ul>\n                      </div>\n                      <p style=\"margin:0 0 8px;color:#334155;font-size:16px;\">If you have any updates or questions, simply reply to this email.</p>\n                      <p style=\"margin:0 0 4px;color:#334155;font-size:16px;\">— ${sigName2}${sigTitle2 ? `, ${sigTitle2}` : ''}</p>\n                      <p style=\"margin:0 0 8px;color:#64748b;font-size:14px;\">${sigAddress2}${sigEmail2 ? ` • <a href=\"mailto:${sigEmail2}\">${sigEmail2}</a>` : ''}</p>\n                      <hr style=\"border:none;border-top:1px solid #e2e8f0;margin:16px 0;\"/>\n                      <p style=\"margin:0;color:#94a3b8;font-size:12px;line-height:1.5;\">${privacyText2}${privacyUrl2 ? ` <a href=\"${privacyUrl2}\">Privacy Policy</a>.` : ''}</p>\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n          </table>`;
+        const replyTo2 = process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || undefined;
+        sendEmail(
+          "Thank you — Turtleback Robotics Academy",
+          `Hi ${firstName},\n\nWe appreciate your interest in partnering with Turtleback Robotics Academy. Our team will follow up within 1–2 business days.\n\nSummary\n- Organization: ${orgName}\n- Type: ${orgType}${orgType === 'other' && orgTypeOther ? ` (${orgTypeOther})` : ''}\n\nReply to this email with any questions.\n\n— ${sigName2}${sigTitle2 ? ", " + sigTitle2 : ""}\n${sigAddress2}${sigEmail2 ? "\n" + sigEmail2 : ""}\n\nPrivacy: ${privacyText2}${privacyUrl2 ? ` (${privacyUrl2})` : ''}`,
+          partnerHtml,
+          email,
+          undefined,
+          replyTo2
         );
       }
 
