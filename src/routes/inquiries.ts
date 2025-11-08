@@ -242,10 +242,10 @@ router.post("/", async (req, res) => {
         );
         // Parent receipt via Resend (HTML + reply-to + optional BCC)
         const logoUrl = process.env.EMAIL_LOGO_URL || '';
-        const sigName = process.env.EMAIL_SIGNATURE_NAME || 'Turtleback Robotics Team';
-        const sigTitle = process.env.EMAIL_SIGNATURE_TITLE || '';
-        const sigEmail = process.env.EMAIL_SIGNATURE_EMAIL || (process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || '');
-        const sigAddress = process.env.EMAIL_SIGNATURE_ADDRESS || 'Richmond, VA';
+        const sigName = process.env.EMAIL_SIGNATURE_NAME || 'Eloi Delva';
+        const sigTitle = process.env.EMAIL_SIGNATURE_TITLE || 'CEO';
+        const sigEmail = process.env.EMAIL_SIGNATURE_EMAIL || 'robotics@elovainc.com';
+        const sigAddress = process.env.EMAIL_SIGNATURE_ADDRESS || 'Turtleback Robotics Academy • 6815 Commons Drive • Prince George, VA 23875';
         const privacyText = process.env.EMAIL_PRIVACY_TEXT || 'We respect your privacy. We use your information only to respond to your inquiry and provide program updates you opt into. We do not sell or share personal information.';
         const privacyUrl = process.env.EMAIL_PRIVACY_URL || '';
         const niceHtml = `
@@ -259,6 +259,8 @@ router.post("/", async (req, res) => {
                       <h1 style="margin:0 0 8px;font-size:22px;color:#0f172a;">Thank you for contacting Turtleback Robotics Academy</h1>
                       <p style="margin:0 0 16px;color:#334155;font-size:16px;">Hi ${firstName},</p>
                       <p style="margin:0 0 16px;color:#334155;font-size:16px;">We’re excited that you’re considering our programs—great choice! Hands‑on robotics builds real‑world problem solving, creativity, and confidence. Our team has received your request and will follow up within 1–2 business days.</p>
+                      <p style="margin:0 0 12px;color:#334155;font-size:16px;">Congratulations on taking a powerful step for your child’s growth. We care deeply about young learners and the communities we serve, and we’re honored to partner with you in their journey.</p>
+                      <p style="margin:0 0 16px;color:#334155;font-size:16px;">Our classes strengthen STEM — <strong>Science, Technology, Engineering, and Mathematics</strong> — through meaningful projects, collaborative teamwork, and thoughtful coaching. Students develop creativity, perseverance, and communication while building real robots and solving authentic challenges.</p>
                       <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:16px 0;">
                         <p style="margin:0 0 8px;color:#0f172a;font-weight:600;">Summary</p>
                         <ul style="margin:0;color:#334155;padding-left:18px;">
@@ -280,7 +282,7 @@ router.post("/", async (req, res) => {
         const replyTo = process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || undefined;
         sendEmail(
           "Thanks for your interest — Turtleback Robotics Academy",
-          `Hi ${firstName},\n\nWe’re excited that you’re considering our programs—great choice! Our team received your request and will follow up within 1–2 business days.\n\nSummary\n- Kids: ${numberOfKids ?? 1}\n- Age groups: ${(ageGroups || []).join(", ")}\n\nReply to this email with any questions.\n\n— ${sigName}${sigTitle ? ", " + sigTitle : ""}\n${sigAddress}${sigEmail ? "\n" + sigEmail : ""}\n\nPrivacy: ${privacyText}${privacyUrl ? ` (${privacyUrl})` : ''}`,
+          `Hi ${firstName},\n\nWe’re excited that you’re considering our programs—great choice! Our team received your request and will follow up within 1–2 business days.\n\nCongratulations on taking a powerful step for your child’s growth. Our classes strengthen STEM (Science, Technology, Engineering, and Mathematics) while building creativity, teamwork, problem solving, and confidence.\n\nSummary\n- Kids: ${numberOfKids ?? 1}\n- Age groups: ${(ageGroups || []).join(", ")}\n\nReply to this email with any questions.\n\n— ${sigName}${sigTitle ? ", " + sigTitle : ""}\n${sigAddress}${sigEmail ? "\n" + sigEmail : ""}\n\nPrivacy: ${privacyText}${privacyUrl ? ` (${privacyUrl})` : ''}`,
           niceHtml,
           email,
           undefined,
@@ -356,10 +358,10 @@ router.post("/", async (req, res) => {
         );
         // Partner receipt via Resend (logo + signature + privacy)
         const logoUrl2 = process.env.EMAIL_LOGO_URL || '';
-        const sigName2 = process.env.EMAIL_SIGNATURE_NAME || 'Turtleback Robotics Team';
-        const sigTitle2 = process.env.EMAIL_SIGNATURE_TITLE || '';
-        const sigEmail2 = process.env.EMAIL_SIGNATURE_EMAIL || (process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || '');
-        const sigAddress2 = process.env.EMAIL_SIGNATURE_ADDRESS || 'Richmond, VA';
+        const sigName2 = process.env.EMAIL_SIGNATURE_NAME || 'Eloi Delva';
+        const sigTitle2 = process.env.EMAIL_SIGNATURE_TITLE || 'CEO';
+        const sigEmail2 = process.env.EMAIL_SIGNATURE_EMAIL || 'robotics@elovainc.com';
+        const sigAddress2 = process.env.EMAIL_SIGNATURE_ADDRESS || 'Turtleback Robotics Academy • 6815 Commons Drive • Prince George, VA 23875';
         const privacyText2 = process.env.EMAIL_PRIVACY_TEXT || 'We respect your privacy. We use your information only to respond to your inquiry and provide program updates you opt into. We do not sell or share personal information.';
         const privacyUrl2 = process.env.EMAIL_PRIVACY_URL || '';
         const partnerHtml = `
