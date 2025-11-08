@@ -126,7 +126,12 @@ const partnerSchema = Joi.object({
   orgType: Joi.string().valid(
     "government","nonprofit","school","library","corporate_sponsor","faith_community","other"
   ).required(),
-  orgTypeOther: Joi.string().max(200).when("orgType", { is: "other", then: Joi.required() }),
+  // Allow empty value when orgType is not 'other' (and ignore it downstream)
+  orgTypeOther: Joi.alternatives().conditional("orgType", {
+    is: "other",
+    then: Joi.string().min(1).max(200).required(),
+    otherwise: Joi.string().allow("", null).optional(),
+  }),
   orgName: Joi.string().min(2).max(200).required(),
   firstName: Joi.string().min(1).max(100).required(),
   lastName: Joi.string().min(1).max(100).required(),
