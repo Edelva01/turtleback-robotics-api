@@ -273,7 +273,7 @@ router.post("/", async (req, res) => {
                           <li>Age groups: ${(ageGroups || []).join(", ")}</li>
                         </ul>
                       </div>
-                      <p style="margin:0 0 8px;color:#334155;font-size:16px;">If you have any updates or questions, simply reply to this email.</p>
+                      <p style="margin:0 0 24px;color:#334155;font-size:16px;">If you have any updates or questions, simply reply to this email.</p>
                       <p style="margin:0 0 12px;color:#334155;font-size:16px;">Best regards,</p>
                       <p style="margin:0;color:#0f172a;font-weight:600;font-size:16px;">${sigName}${sigTitle ? `, ${sigTitle}` : ''}</p>
                       ${sigAddress ? sigAddress.split('•').map((p:any)=>`<p style="margin:0;color:#64748b;font-size:14px;">${String(p).trim()}</p>`).join('') : ''}
@@ -387,7 +387,7 @@ router.post("/", async (req, res) => {
                       <h1 style="margin:0 0 8px;font-size:22px;color:#0f172a;">Thank you for your partnership inquiry</h1>
                       <p style="margin:0 0 16px;color:#334155;font-size:16px;">Hi ${firstName},</p>
                       <p style="margin:0 0 16px;color:#334155;font-size:16px;">We appreciate your inquiry and are delighted to see <strong>${orgName}</strong> is interested in partnering with Turtleback Robotics Academy as a <strong>${orgTypeDisplay}</strong> entity. Our team will follow up within 1–2 business days to discuss next steps.</p>
-                      <p style="margin:0 0 8px;color:#334155;font-size:16px;">If you have any updates or questions, simply reply to this email.</p>
+                      <p style="margin:0 0 24px;color:#334155;font-size:16px;">If you have any updates or questions, simply reply to this email.</p>
                       <p style="margin:0 0 12px;color:#334155;font-size:16px;">Best regards,</p>
                       <p style="margin:0;color:#0f172a;font-weight:600;font-size:16px;">${sigName2}${sigTitle2 ? `, ${sigTitle2}` : ''}</p>
                       ${sigAddress2 ? sigAddress2.split('•').map((p:any)=>`<p style="margin:0;color:#64748b;font-size:14px;">${String(p).trim()}</p>`).join('') : ''}
