@@ -5,6 +5,48 @@ import { Prisma } from "@prisma/client";
 
 const router = Router();
 
+// Lightweight notifier (Slack webhook via env SLACK_WEBHOOK_URL)
+const gfetch: any = (globalThis as any).fetch?.bind(globalThis);
+async function notify(text: string) {
+  const url = process.env.SLACK_WEBHOOK_URL;
+  if (!url || !gfetch) return;
+  try {
+    await gfetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+  } catch (e: any) {
+    console.warn("[notify] slack error:", e?.message || e);
+  }
+}
+
+// Email notification via Resend (optional)
+async function sendEmail(subject: string, text: string, html?: string) {
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM;
+  const to = process.env.RESEND_TO;
+  if (!key || !from || !to || !gfetch) return;
+  const recipients = to.split(/\s*,\s*/).filter(Boolean);
+  if (!recipients.length) return;
+  try {
+    const resp = await gfetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to: recipients, subject, text, html }),
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      console.warn("[notify] resend error:", resp.status, body);
+    }
+  } catch (e: any) {
+    console.warn("[notify] resend exception:", e?.message || e);
+  }
+}
+
 // Parent payload
 const parentSchema = Joi.object({
   firstName: Joi.string().min(1).max(100).required(),
@@ -107,6 +149,20 @@ router.post("/", async (req, res) => {
         return inquiryId;
       });
 
+      // Fire-and-forget notifications
+      const parentSummary =
+        `New Parent Inquiry\n` +
+        `Name: ${firstName} ${lastName}\n` +
+        `Email: ${email}  Phone: ${phone || "-"}\n` +
+        `Kids: ${numberOfKids ?? 1}  Ages: ${(ageGroups || []).join(", ")}\n` +
+        `Message: ${(message ?? "").slice(0, 500)}\n` +
+        `Page: ${pagePath || "-"}  Source: ${source}`;
+      notify(parentSummary);
+      sendEmail(
+        `New Parent Inquiry — ${firstName} ${lastName}`,
+        parentSummary
+      );
+
       return res.status(201).json({ ok: true, id: result });
     } else {
       // Partner inquiry
@@ -140,6 +196,19 @@ router.post("/", async (req, res) => {
         return inquiryId;
       });
 
+      // Fire-and-forget notifications
+      const partnerSummary =
+        `New Partner Inquiry\n` +
+        `Org: ${orgName}  Type: ${orgType}${orgType === 'other' && orgTypeOther ? ` (${orgTypeOther})` : ''}\n` +
+        `Contact: ${firstName} ${lastName}  Email: ${email}  Phone: ${phone || "-"}\n` +
+        `Message: ${(message ?? "").slice(0, 500)}\n` +
+        `Page: ${pagePath || "-"}  Source: ${source}`;
+      notify(partnerSummary);
+      sendEmail(
+        `New Partner Inquiry — ${orgName}`,
+        partnerSummary
+      );
+
       return res.status(201).json({ ok: true, id: result });
     }
   } catch (e: any) {
@@ -166,8 +235,41 @@ router.get("/admin", async (req, res) => {
   if (req.header("x-admin-token") !== process.env.ADMIN_TOKEN) {
     return res.status(401).json({ ok: false, error: "unauthorized" });
   }
-  const rows = await prisma.$queryRaw<any[]>`SELECT * FROM inquiries ORDER BY created_at DESC LIMIT 200;`;
-  return res.json({ ok: true, data: rows });
+  const status = (req.query.status as string) || undefined;
+  const q = (req.query.q as string) || undefined;
+  if (status) {
+    const rows = await prisma.$queryRaw<any[]>`
+      SELECT * FROM inquiries
+      WHERE status = ${status}
+        AND (${q ?? null} IS NULL OR (full_name ILIKE '%' || ${q ?? ''} || '%' OR email ILIKE '%' || ${q ?? ''} || '%'))
+      ORDER BY created_at DESC
+      LIMIT 200;`;
+    return res.json({ ok: true, data: rows });
+  } else {
+    const rows = await prisma.$queryRaw<any[]>`
+      SELECT * FROM inquiries
+      WHERE (${q ?? null} IS NULL OR (full_name ILIKE '%' || ${q ?? ''} || '%' OR email ILIKE '%' || ${q ?? ''} || '%'))
+      ORDER BY created_at DESC
+      LIMIT 200;`;
+    return res.json({ ok: true, data: rows });
+  }
+});
+
+// Update inquiry status: new | read | archived
+router.patch("/admin/:id/status", async (req, res) => {
+  if (req.header("x-admin-token") !== process.env.ADMIN_TOKEN) {
+    return res.status(401).json({ ok: false, error: "unauthorized" });
+  }
+  const id = req.params.id;
+  const status = (req.body?.status as string) || "";
+  const allowed = new Set(["new", "read", "archived"]);
+  if (!allowed.has(status)) {
+    return res.status(400).json({ ok: false, error: "invalid_status" });
+  }
+  await prisma.$executeRaw`
+    UPDATE inquiries SET status = ${status}, updated_at = now()
+    WHERE id = CAST(${id} AS uuid)`;
+  return res.json({ ok: true });
 });
 
 export default router;
