@@ -289,7 +289,7 @@ router.post("/", async (req, res) => {
         const replyTo = process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || undefined;
         sendEmail(
           "Thanks for your interest — Turtleback Robotics Academy",
-          `Hi ${firstName},\n\nWe’re excited that you’re considering our programs—great choice! Our team received your request and will follow up within 1–2 business days.\n\nCongratulations on taking a powerful step for your child’s growth. Our classes strengthen STEM (Science, Technology, Engineering, and Mathematics) while building creativity, teamwork, problem solving, and confidence.\n\nSummary\n- Kids: ${numberOfKids ?? 1}\n- Age groups: ${(ageGroups || []).join(", ")}\n\nReply to this email with any questions.\n\nBest regards,\n${sigName}${sigTitle ? ", " + sigTitle : ""}\n${sigAddress.split('•').map(s=>s.trim()).join('\\n')}\n${sigEmail ? sigEmail + "\\n" : ""}Privacy: ${privacyText}${privacyUrl ? ` (${privacyUrl})` : ''}`,
+          `Hi ${firstName},\n\nWe’re excited that you’re considering our programs—great choice! Our team received your request and will follow up within 1–2 business days.\n\nCongratulations on taking a powerful step for your child’s growth. Our classes strengthen STEM (Science, Technology, Engineering, and Mathematics) while building creativity, teamwork, problem solving, and confidence.\n\nSummary\n- Kids: ${numberOfKids ?? 1}\n- Age groups: ${(ageGroups || []).join(", ")}\n\nReply to this email with any questions.\n\nBest regards,\n${sigName}${sigTitle ? ", " + sigTitle : ""}\n${sigAddress.split('•').map((s: string)=>s.trim()).join('\\n')}\n${sigEmail ? sigEmail + "\\n" : ""}Privacy: ${privacyText}${privacyUrl ? ` (${privacyUrl})` : ''}`,
           niceHtml,
           email,
           undefined,
@@ -338,6 +338,11 @@ router.post("/", async (req, res) => {
         `Message: ${(message ?? "").slice(0, 500)}\n` +
         `Page: ${pagePath || "-"}  Source: ${source}`;
       notify(partnerSummary);
+      const sigName2 = process.env.EMAIL_SIGNATURE_NAME || 'Eloi Delva';
+      const sigTitle2 = process.env.EMAIL_SIGNATURE_TITLE || 'CEO';
+      const sigEmail2 = process.env.EMAIL_SIGNATURE_EMAIL || 'robotics@elovainc.com';
+      const sigAddress2 = process.env.EMAIL_SIGNATURE_ADDRESS || 'Turtleback Robotics Academy • 6815 Commons Drive • Prince George, VA 23875';
+      const addressLines2 = sigAddress2.split('•').map((s: string) => s.trim()).join('\\n');
       if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
         const internalTo = (process.env.SMTP_TO || "").split(/\s*,\s*/).filter(Boolean);
         if (internalTo.length) {
@@ -353,7 +358,7 @@ router.post("/", async (req, res) => {
             `Our team will follow up within 1–2 business days to discuss next steps.\n\n` +
             `If you have updates, just reply to this email.\n\n` +
             `${sigName2}${sigTitle2 ? ", " + sigTitle2 : ""}\n` +
-            `${sigAddress2.split('•').map(s=>s.trim()).join('\\n')}\n` +
+            `${addressLines2}\n` +
             `${sigEmail2 ? sigEmail2 + "\\n" : ""}`,
         });
       } else {
@@ -398,7 +403,7 @@ router.post("/", async (req, res) => {
         const replyTo2 = process.env.RESEND_REPLY_TO || (process.env.RESEND_FROM || '').match(/<([^>]+)>/)?.[1] || undefined;
         sendEmail(
           "Thank you — Turtleback Robotics Academy",
-          `Hi ${firstName},\n\nWe appreciate your inquiry and are delighted to see ${orgName} is interested in partnering with Turtleback Robotics Academy as a ${String(orgType).split('_').map(s=>s[0].toUpperCase()+s.slice(1)).join(' ')} entity. Our team will follow up within 1–2 business days to discuss next steps.\n\nReply to this email with any questions.\n\nBest regards,\n${sigName2}${sigTitle2 ? ", " + sigTitle2 : ""}\n${sigAddress2.split('•').map(s=>s.trim()).join('\\n')}\n${sigEmail2 ? sigEmail2 + "\\n" : ""}Privacy: ${privacyText2}${privacyUrl2 ? ` (${privacyUrl2})` : ''}`,
+          `Hi ${firstName},\n\nWe appreciate your inquiry and are delighted to see ${orgName} is interested in partnering with Turtleback Robotics Academy as a ${String(orgType).split('_').map(s=>s[0].toUpperCase()+s.slice(1)).join(' ')} entity. Our team will follow up within 1–2 business days to discuss next steps.\n\nReply to this email with any questions.\n\nBest regards,\n${sigName2}${sigTitle2 ? ", " + sigTitle2 : ""}\n${sigAddress2.split('•').map((s: string)=>s.trim()).join('\\n')}\n${sigEmail2 ? sigEmail2 + "\\n" : ""}Privacy: ${privacyText2}${privacyUrl2 ? ` (${privacyUrl2})` : ''}`,
           partnerHtml,
           email,
           undefined,
