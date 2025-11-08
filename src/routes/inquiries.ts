@@ -266,7 +266,7 @@ router.post("/", async (req, res) => {
                       <p style="margin:0 0 16px;color:#334155;font-size:16px;">We’re excited that you’re considering our programs—great choice! Hands‑on robotics builds real‑world problem solving, creativity, and confidence. Our team has received your request and will follow up within 1–2 business days.</p>
                       <p style="margin:0 0 12px;color:#334155;font-size:16px;">Congratulations on taking a powerful step for your child’s growth. We care deeply about young learners and the communities we serve, and we’re honored to partner with you in their journey.</p>
                       <p style="margin:0 0 16px;color:#334155;font-size:16px;">Our classes strengthen STEM — <strong>Science, Technology, Engineering, and Mathematics</strong> — through meaningful projects, collaborative teamwork, and thoughtful coaching. Students develop creativity, perseverance, and communication while building real robots and solving authentic challenges.</p>
-                      <div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:16px 0;">
+                      <div style="margin:16px 0;margin:16px 0;">
                         <p style="margin:0 0 8px;color:#0f172a;font-weight:600;">Summary</p>
                         <ul style="margin:0;color:#334155;padding-left:18px;">
                           <li>Kids: ${numberOfKids ?? 1}</li>
